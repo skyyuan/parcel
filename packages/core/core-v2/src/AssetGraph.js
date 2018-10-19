@@ -1,65 +1,66 @@
-
 // @flow
 'use strict';
-import Graph, { Node, type NodeId } from './Graph';
-import type { Dependency, Asset, File } from './types';
+import Graph, {Node, type NodeId} from './Graph';
+import type {Dependency, Asset, File} from './types';
 
 export const nodeFromRootDir = (rootDir: string) => ({
   id: rootDir,
   type: 'root',
-  value: rootDir,
+  value: rootDir
 });
 
 export const nodeFromDep = (dep: Dependency) => ({
   id: `${dep.sourcePath}:${dep.moduleSpecifier}`,
   type: 'dependency',
-  value: dep,
+  value: dep
 });
 
 export const nodeFromFile = (file: File) => ({
   id: file.filePath,
   type: 'file',
-  value: file,
+  value: file
 });
 
 export const nodeFromAsset = (asset: Asset) => ({
   id: asset.hash,
   type: 'asset',
-  value: asset,
+  value: asset
 });
 
 const getFileNodesFromGraph = (graph: Graph): Array<Node> => {
-  return Array.from(graph.nodes.values())
-    .filter((node: any) => node.type === 'file');
-}
+  return Array.from(graph.nodes.values()).filter(
+    (node: any) => node.type === 'file'
+  );
+};
 
 const getFilesFromGraph = (graph: Graph): Array<File> => {
   return getFileNodesFromGraph(graph).map(node => node.value);
-}
+};
 
 const getDepNodesFromGraph = (graph: Graph): Array<Node> => {
-  return Array.from(graph.nodes.values())
-    .filter((node: any) => node.type === 'dependency');
-}
+  return Array.from(graph.nodes.values()).filter(
+    (node: any) => node.type === 'dependency'
+  );
+};
 
 const getDepsFromGraph = (graph: Graph): Array<Dependency> => {
   return getDepNodesFromGraph(graph).map(node => node.value);
-}
+};
 
 type DepUpdates = {
   newFile?: File,
-  prunedFiles: Array<File>,
-}
+  prunedFiles: Array<File>
+};
 
 type FileUpdates = {
   newDeps: Array<Dependency>,
   prunedFiles: Array<File>
-}
+};
 
 type AssetGraphOpts = {
   entries: Array<string>,
-  rootDir: string,
-}
+  rootDir: string
+};
 
 /**
  * AssetGraph is a Graph with some extra rules.
@@ -71,21 +72,25 @@ type AssetGraphOpts = {
  */
 export default class AssetGraph extends Graph {
   incompleteNodes: Map<NodeId, Node>;
+  invalidNodes: Map<NodeId, Node>;
 
-  constructor({ entries, rootDir }: AssetGraphOpts) {
+  constructor({entries, rootDir}: AssetGraphOpts) {
     super();
     this.incompleteNodes = new Map();
-    this.initializeGraph({ entries, rootDir });
+    this.invalidNodes = new Map();
+    this.initializeGraph({entries, rootDir});
   }
 
-  initializeGraph({ entries, rootDir }: AssetGraphOpts) {
+  initializeGraph({entries, rootDir}: AssetGraphOpts) {
     let rootNode = nodeFromRootDir(rootDir);
     this.addNode(rootNode);
 
-    let depNodes = entries.map(entry => nodeFromDep({
-      sourcePath: rootDir,
-      moduleSpecifier: entry,
-    }));
+    let depNodes = entries.map(entry =>
+      nodeFromDep({
+        sourcePath: rootDir,
+        moduleSpecifier: entry
+      })
+    );
 
     this.updateDownStreamNodes(rootNode, depNodes);
     for (let depNode of depNodes) {
@@ -106,7 +111,7 @@ export default class AssetGraph extends Graph {
     this.incompleteNodes.delete(depNode.id);
 
     let fileNode = nodeFromFile(file);
-    let { added, removed } = this.updateDownStreamNodes(depNode, [fileNode]);
+    let {added, removed} = this.updateDownStreamNodes(depNode, [fileNode]);
 
     if (added.nodes.size) {
       newFile = file;
@@ -114,12 +119,12 @@ export default class AssetGraph extends Graph {
     }
 
     let prunedFiles = getFilesFromGraph(removed);
-    return { newFile, prunedFiles };
+    return {newFile, prunedFiles};
   }
 
   // Once a file has been transformed, connect it to asset nodes representing the generated assets
   updateFile(file: File, assets: Array<Asset>): FileUpdates {
-    let newDepNodes: Array<Dependency> = [];
+    let newDepNodes: Array<Node> = [];
 
     let fileNode = nodeFromFile(file);
     this.incompleteNodes.delete(fileNode.id);
@@ -131,7 +136,9 @@ export default class AssetGraph extends Graph {
 
     for (let assetNode of assetNodes) {
       // TODO: dep should already have sourcePath
-      let depNodes = assetNode.value.dependencies.map(dep => nodeFromDep({...dep, sourcePath: file.filePath}));
+      let depNodes = assetNode.value.dependencies.map(dep =>
+        nodeFromDep({...dep, sourcePath: file.filePath})
+      );
       let {removed, added} = this.updateDownStreamNodes(assetNode, depNodes);
       prunedFiles = prunedFiles.concat(getFilesFromGraph(removed));
       newDepNodes = newDepNodes.concat(getDepNodesFromGraph(added));
@@ -143,7 +150,12 @@ export default class AssetGraph extends Graph {
 
     let newDeps = newDepNodes.map(node => node.value);
 
-    return { newDeps, prunedFiles };
+    return {newDeps, prunedFiles};
+  }
+
+  invalidateNodeById(nodeId: string) {
+    let node = this.nodes.get(nodeId); //$FlowFixMe
+    this.invalidNodes.set(node.id, node);
   }
 
   async dumpGraphViz() {
@@ -154,15 +166,15 @@ export default class AssetGraph extends Graph {
     let g = graphviz.digraph('G');
 
     let colors = {
-      'root': 'gray',
-      'asset': 'green',
-      'dependency': 'orange',
-      'file': 'cyan',
-      'default': 'white',
+      root: 'gray',
+      asset: 'green',
+      dependency: 'orange',
+      file: 'cyan',
+      default: 'white'
     };
 
     let nodes = Array.from(this.nodes.values());
-    let root
+    let root;
     for (let node of nodes) {
       if (node.type === 'root') {
         root = node;
@@ -189,7 +201,10 @@ export default class AssetGraph extends Graph {
         if (node.value.isOptional) parts.push('optional');
         if (parts.length) label += '(' + parts.join(', ') + ')';
       } else if (node.type === 'asset') {
-        label += path.relative(rootPath, node.value.filePath) + '#' + node.value.hash.slice(0, 8);
+        label +=
+          path.relative(rootPath, node.value.filePath) +
+          '#' +
+          node.value.hash.slice(0, 8);
       } else if (node.type === 'file') {
         label += path.relative(rootPath, node.value.filePath);
       } else {
@@ -203,7 +218,7 @@ export default class AssetGraph extends Graph {
       let e = g.addEdge(edge.from, edge.to);
     }
 
-    let tmp = tempy.file({ name: 'graph.png' });
+    let tmp = tempy.file({name: 'graph.png'});
 
     await g.output('png', tmp);
     console.log(`open ${tmp}`);

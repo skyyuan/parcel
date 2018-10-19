@@ -15,8 +15,10 @@
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-register": "^6.26.0",
+    "delay": "^4.1.0",
     "mocha": "^5.1.1",
-    "pretty-format": "^23.5.0"
+    "pretty-format": "^23.5.0",
+    "random-int": "^1.0.0"
   },
   "dependencies": {
     "@parcel/cache-v2": "^1.0.0",
