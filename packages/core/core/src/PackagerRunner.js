@@ -14,8 +14,6 @@ class PackagerRunner {
   async runPackager(bundle) {
     let {packagers} = this.parcelConfig;
     let {name = 'file.' + bundle.type} = bundle;
-
-    console.log('Bundle', bundle, bundle.constructor);
     let packager = matchConfig(packagers, name);
 
     if (!packager) {
