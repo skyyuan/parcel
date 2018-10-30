@@ -197,7 +197,7 @@ export default class Parcel {
   // TODO: implement bundle types
   package(bundles: any) {
     return Promise.all(
-      bundles.map(bundle => this.packagerRunner.runPackager({bundle}))
+      bundles.map(bundle => this.packagerRunner.runPackager(bundle))
     );
   }
 

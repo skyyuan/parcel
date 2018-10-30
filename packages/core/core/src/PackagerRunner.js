@@ -1,6 +1,7 @@
 'use strict';
 const Cache = require('@parcel/cache');
 const {mkdirp} = require('@parcel/fs');
+const {matchConfig} = require('@parcel/utils');
 const path = require('path');
 
 class PackagerRunner {
@@ -10,20 +11,25 @@ class PackagerRunner {
     this.dirExists = false;
   }
 
-  async loadPackager() {
-    return require('@parcel/packager-js');
-  }
+  async runPackager(bundle) {
+    let {packagers} = this.parcelConfig;
+    let {name = 'file.' + bundle.type} = bundle;
 
-  async runPackager({bundle}) {
-    let packager = await this.loadPackager();
+    console.log('Bundle', bundle, bundle.constructor);
+    let packager = matchConfig(packagers, name);
+
+    if (!packager) {
+      throw new Error(
+        `Could not find packager for bundle of type "${bundle.type}"`
+      );
+    }
+
+    // TODO(fathyb): use ConfigRunner
+    packager = require(packager);
 
     let modulesContents = await Promise.all(
       bundle.assets.map(async asset => {
-        // let fileContents = await packager.readFile({
-        //   filePath: asset.code,
-        // });
         let blobs = await this.cache.readBlobs(asset);
-
         let result = await packager.asset({blobs});
 
         return result;

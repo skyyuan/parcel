@@ -3,6 +3,7 @@ const localRequire = require('@parcel/utils/localRequire');
 const path = require('path');
 const Asset = require('./Asset');
 const clone = require('clone');
+const {matchConfig} = require('@parcel/utils');
 const md5 = require('@parcel/utils/md5');
 const Cache = require('@parcel/cache');
 const fs = require('@parcel/fs');
@@ -47,17 +48,19 @@ class TransformerRunner {
   }
 
   async resolvePipeline(asset) {
-    for (let pattern in this.parcelConfig.transforms) {
-      if (
-        micromatch.isMatch(asset.filePath, pattern) ||
-        micromatch.isMatch(path.basename(asset.filePath), pattern)
-      ) {
-        return Promise.all(
-          this.parcelConfig.transforms[pattern].map(
-            async transform => await localRequire(transform, asset.filePath)
-          )
-        );
-      }
+    const transformer = matchConfig(
+      this.parcelConfig.transforms,
+      asset.filePath
+    );
+
+    if (transformer) {
+      return Promise.all(
+        this.parcelConfig.transforms[pattern].map(
+          async transform => await localRequire(transform, asset.filePath)
+        )
+      );
+    } else {
+      throw new Error(`Could not find packager for asset "${asset.filePath}"`);
     }
   }
 

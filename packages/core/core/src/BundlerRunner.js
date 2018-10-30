@@ -14,6 +14,8 @@ class BundlerRunner {
     return {
       bundles: [
         {
+          // TODO(fathyb): use correct type
+          type: 'js',
           destPath: path.join(process.cwd(), 'dist/bundle.js'),
           assets
         }
