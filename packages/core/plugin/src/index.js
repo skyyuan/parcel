@@ -1,12 +1,12 @@
 // @flow
 'use strict';
 import type {
-  TransformerAsset,
   TransformerOutput,
   Transformer,
   AST,
   Config,
-  ConfigOutput
+  ConfigOutput,
+  Resolver
 } from '@parcel/types';
 
 /*
@@ -18,14 +18,18 @@ type PackagerOpts<FileContents: string | Buffer | null> = {
 };
 */
 
-export const transformer = (opts /*: TransformerOpts */) => {
+export const transformer = (opts: any) => {
   return opts;
 };
 
-export const packager = (opts /*: PackagerOpts */) => {
+export const packager = (opts: any) => {
   return opts;
 };
 
-export const optimizer = (opts /*: OptimizerOpts */) => {
+export const optimizer = (opts: any) => {
+  return opts;
+};
+
+export const resolver = (opts: Resolver) => {
   return opts;
 };

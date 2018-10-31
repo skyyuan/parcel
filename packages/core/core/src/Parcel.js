@@ -5,7 +5,7 @@ import Watcher from '@parcel/watcher';
 import PQueue from 'p-queue';
 import AssetGraph from './AssetGraph';
 import {Node} from './Graph';
-import type {Dependency, File} from '@parcel/types';
+import type {CLIOptions, Dependency, File} from '@parcel/types';
 import TransformerRunner from './TransformerRunner';
 import ResolverRunner from './ResolverRunner';
 import BundlerRunner from './BundlerRunner';
@@ -16,14 +16,10 @@ const defaultConfig = require('@parcel/config-default');
 
 const abortError = new Error('Build aborted');
 
-type CliOpts = {
-  watch?: boolean
-};
-
 type ParcelOpts = {
   entries: Array<string>,
   cwd?: string,
-  cliOpts: CliOpts
+  cliOpts: CLIOptions
 };
 
 type Signal = {
@@ -60,7 +56,11 @@ export default class Parcel {
       parcelConfig: defaultConfig,
       cliOpts
     });
-    this.resolverRunner = new ResolverRunner();
+    this.resolverRunner = new ResolverRunner({
+      parcelConfig: defaultConfig,
+      rootDir: this.rootDir,
+      cliOpts
+    });
     this.bundlerRunner = new BundlerRunner({
       parcelConfig: defaultConfig,
       cliOpts
@@ -153,7 +153,7 @@ export default class Parcel {
   }
 
   async resolve(dep: Dependency, {signal}: BuildOpts) {
-    // console.log('resolving dependency', dep);
+    console.log('resolving dependency', dep);
     let resolvedPath = await this.resolverRunner.resolve(dep);
 
     let file = {filePath: resolvedPath};
@@ -168,7 +168,7 @@ export default class Parcel {
   }
 
   async transform(file: File, {signal, shallow}: BuildOpts) {
-    // console.log('transforming file', file);
+    console.log('transforming file', file, this);
     let {children: childAssets} = await this.transformerRunner.transform(file);
 
     if (signal && !signal.aborted) {

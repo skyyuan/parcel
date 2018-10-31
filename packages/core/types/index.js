@@ -120,6 +120,8 @@ export type TransformerInput = {
   env: Environment
 };
 
+export type TransformerOutput = {};
+
 export type TransformerResult = {
   type: string,
   code?: string,
@@ -193,7 +195,11 @@ export type Optimizer = {
 };
 
 export type Resolver = {
-  resolve(dependency: Dependency, opts: CLIOptions): FilePath | null
+  resolve(
+    dependency: Dependency,
+    opts: CLIOptions,
+    rootDir: string
+  ): FilePath | null
 };
 
 export type Reporter = {

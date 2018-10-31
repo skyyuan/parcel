@@ -38,6 +38,7 @@ class TransformerRunner {
   }
 
   async transform(file: File) {
+    console.log('Transofmr file', file);
     let code = await fs.readFile(file.filePath, 'utf8');
     let hash = md5(code);
 
